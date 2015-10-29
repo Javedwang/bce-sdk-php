@@ -95,9 +95,8 @@ class QnsClient extends BceBaseClient
 
     /**
      * 查询指定topic的subscription列表。
-     * TODO:完善可选字段 然后就是百度文档写错subsection少个n
      */
-    public function listTopicSubscriptions($topicName,$options)
+    public function listTopicSubscriptions($topicName,$options=[])
     {
         list($config) = $this->parseOptions($options,'config');
         return $this->sendRequest(
@@ -112,65 +111,153 @@ class QnsClient extends BceBaseClient
     /**
      * 用于查询指定Topic状态。
      */
-    public function getTopicAttributes()
+    public function getTopicAttributes($topicName,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        return $this->sendRequest(
+            HttpMethod::GET,
+            [
+                'config' => $config,
+            ],
+            '/topic/'.$topicName
+        );
     }
 
     /**
      * 更新一个已存在的Topic的信息。
      */
-    public function setTopicAttributes()
+    public function setTopicAttributes($topicName,$delayInSeconds=3600,$maximumMessageSizeInBytes=262144,$messageRetentionPeriodInSeconds=1209600,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        $param = [
+            'delayInSeconds'=>$delayInSeconds,
+            'maximumMessageSizeInBytes'=>$maximumMessageSizeInBytes,
+            'messageRetentionPeriodInSeconds'=>$messageRetentionPeriodInSeconds
+        ];
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            [
+                'config' => $config,
+                'headers'=>['If-Match'=>'*'],
+                'body'=>json_encode($param)
+            ],
+            '/topic/'.$topicName
+        );
     }
 
     /**
      * 用于发送消息到topic中，单个请求不超过256KB。单次发送的消息个数不超过1000。
      */
-    public function sendTopic()
+    public function sendTopic($topicName,$messageBody,$delayInSeconds=0,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        $params=[
+            'messages'=>[
+                [
+                    'messageBody'=>$messageBody,
+                    'delayInSeconds'=>$delayInSeconds
+                ],
+                [
+                    'messageBody'=>$messageBody,
+                ]
+            ]
+        ];
+        return $this->sendRequest(
+            HttpMethod::POST,
+            [
+                'config' => $config,
+                'body'=>json_encode($params)
+            ],
+            '/topic/'.$topicName.'/message'
+        );
     }
 
     /**
      * 本接口用于创建一个新的Subscritpion。
      */
-    public function createSubscription()
+    public function createSubscription($topicName,$subscriptionName,$pushConfig=['endpoint'=>'','version'=>'V1alpha'],$receiveMessageWaitTimeInSeconds=0,$visibilityTimeoutInSeconds=30,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        $param = [
+            'receiveMessageWaitTimeInSeconds'=>$receiveMessageWaitTimeInSeconds,
+            'topic'=>$topicName,
+            'visibilityTimeoutInSeconds'=>$visibilityTimeoutInSeconds,
+            'pushConfig'=>$pushConfig
+        ];
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            [
+                'config' => $config,
+                'body'=>json_encode($param)
+            ],
+            '/subscription/'.$subscriptionName
+        );
     }
 
     /**
      * 用于删除指定的Subscritpion。
      */
-    public function deleteSubscription()
+    public function deleteSubscription($subscriptionName,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        return $this->sendRequest(
+            HttpMethod::DELETE,
+            [
+                'config' => $config,
+            ],
+            '/subscription/'.$subscriptionName
+        );
     }
 
     /**
      * 用于查询用户的subscription列表。
      */
-    public function listSubscription()
+    public function listSubscription($options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        return $this->sendRequest(
+            HttpMethod::GET,
+            [
+                'config' => $config,
+            ],
+            '/subscription'
+        );
     }
 
     /**
      * 用于查询指定subscription状态。
      */
-    public function getSubscriptionAttributes()
+    public function getSubscriptionAttributes($subscriptionName,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        return $this->sendRequest(
+            HttpMethod::GET,
+            [
+                'config' => $config,
+            ],
+            '/subscription/'.$subscriptionName
+        );
     }
 
     /**
      * 更新一个已存在的subscription的信息。
      */
-    public function setSubscriptionAttributes()
+    public function setSubscriptionAttributes($subscriptionName,$receiveMessageWaitTimeInSeconds=0,$visibilityTimeoutInSeconds=30,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        $param = [
+            'receiveMessageWaitTimeInSeconds'=>$receiveMessageWaitTimeInSeconds,
+            'visibilityTimeoutInSeconds'=>$visibilityTimeoutInSeconds,
+        ];
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            [
+                'config' => $config,
+                'headers'=>['If-Match'=>'*'],
+                'body'=>json_encode($param)
+            ],
+            '/subscription/'.$subscriptionName
+        );
     }
 
     /**
@@ -178,17 +265,38 @@ class QnsClient extends BceBaseClient
      * 消费者在VisibilityTimeout时间内消费成功后需要调用delete message接口删除该消息，否则该消息将会被重新置为Visible，此消息又可被消费者重新消费。
      * 如果有太多的消息被接收后没有被删除（目前上限为12000），则无法继续接收，receive message请求将收到OverLimit错误。
      */
-    public function receiveSubscriptionMessage()
+    public function receiveSubscriptionMessage($subscriptionName,$waitInSeconds=0,$maxMessages=1,$peek='',$options=[])
     {
-
+        $params=[
+            'waitInSeconds'=>$waitInSeconds,
+            'maxMessages'=>$maxMessages,
+            'peek'=>$peek
+        ];
+        list($config) = $this->parseOptions($options,'config');
+        return $this->sendRequest(
+            HttpMethod::GET,
+            [
+                'config' => $config,
+                'params'=>$params
+            ],
+            '/subscription/'.$subscriptionName.'/message'
+        );
     }
 
     /**
      * 用于删除已经被消费过的消息，消费者需将上次消费后得到的receiptHandle作为参数来定位要删除的消息。本操作只有在nextVisibleTime时刻之前执行才能成功；如果过了 nextVisibleTime 时刻，消息已经变为 Visible 状态，receiptHandle就会失效，删除失败，需重新消费获取新的receiptHandle。
      */
-    public function deleteSubscriptionMessage()
+    public function deleteSubscriptionMessage($subscriptionName,$receiptHandle,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        return $this->sendRequest(
+            HttpMethod::DELETE,
+            [
+                'config' => $config,
+                'params' =>['receiptHandle'=>$receiptHandle]
+            ],
+            '/subscription/'.$subscriptionName.'/message'
+        );
     }
 
     /**
