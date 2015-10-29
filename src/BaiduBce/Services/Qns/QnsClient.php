@@ -265,13 +265,14 @@ class QnsClient extends BceBaseClient
      * 消费者在VisibilityTimeout时间内消费成功后需要调用delete message接口删除该消息，否则该消息将会被重新置为Visible，此消息又可被消费者重新消费。
      * 如果有太多的消息被接收后没有被删除（目前上限为12000），则无法继续接收，receive message请求将收到OverLimit错误。
      */
-    public function receiveSubscriptionMessage($subscriptionName,$waitInSeconds=0,$maxMessages=1,$peek='',$options=[])
+    public function receiveSubscriptionMessage($subscriptionName,$waitInSeconds=0,$maxMessages=1,$peek=null,$options=[])
     {
         $params=[
             'waitInSeconds'=>$waitInSeconds,
             'maxMessages'=>$maxMessages,
             'peek'=>$peek
         ];
+        $params = array_filter($params);
         list($config) = $this->parseOptions($options,'config');
         return $this->sendRequest(
             HttpMethod::GET,
