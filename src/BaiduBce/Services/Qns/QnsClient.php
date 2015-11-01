@@ -48,7 +48,8 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于创建一个新的Topic
-     * @param $topicName topic名称
+     *
+     * @param $topicName
      * @param int $delayInSeconds
      * @param int $maximumMessageSizeInBytes
      * @param int $messageRetentionPeriodInSeconds
@@ -68,7 +69,7 @@ class QnsClient extends BceBaseClient
             HttpMethod::PUT,
             [
                 'config' => $config,
-                'body' => $params
+                'body' => json_encode($params)
             ],
             '/topic/'.$topicName
         );
@@ -76,6 +77,7 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于删除指定的Topic。当Topic被删除后，与其关联的Subscription并不会被删除，但是对应的topic属性会被置为空字符串。
+     *
      * @param $topicName
      * @param array $options
      * @return mixed
@@ -216,15 +218,21 @@ class QnsClient extends BceBaseClient
      *
      * @param $topicName
      * @param $subscriptionName
-     * @param array $pushConfig
+     * @param string $pushConfig_endpoint
+     * @param string $pushConfig_version
      * @param int $receiveMessageWaitTimeInSeconds
      * @param int $visibilityTimeoutInSeconds
      * @param array $options
      * @return mixed
      */
-    public function createSubscription($topicName,$subscriptionName,$pushConfig=[],$receiveMessageWaitTimeInSeconds=0,$visibilityTimeoutInSeconds=30,$options=[])
+    public function createSubscription($topicName,$subscriptionName,$pushConfig_endpoint='',$pushConfig_version='v1alpha',$receiveMessageWaitTimeInSeconds=0,$visibilityTimeoutInSeconds=30,$options=[])
     {
         list($config) = $this->parseOptions($options,'config');
+        $pushConfig=[
+            'endpoint'=>$pushConfig_endpoint,
+            'version'=>$pushConfig_version
+        ];
+        $pushConfig=array_filter($pushConfig);
         $params = [
             'receiveMessageWaitTimeInSeconds'=>$receiveMessageWaitTimeInSeconds,
             'topic'=>$topicName,
