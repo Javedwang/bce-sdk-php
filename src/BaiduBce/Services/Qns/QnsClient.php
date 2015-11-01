@@ -48,23 +48,37 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于创建一个新的Topic
-     * TODO:完善可选参数
+     * @param $topicName topic名称
+     * @param int $delayInSeconds
+     * @param int $maximumMessageSizeInBytes
+     * @param int $messageRetentionPeriodInSeconds
+     * @param array $options
+     * @return mixed
      */
-    public function createTopic($topicName,$options = [])
+    public function createTopic($topicName,$delayInSeconds=0,$maximumMessageSizeInBytes=262144,$messageRetentionPeriodInSeconds=1209600,$options = [])
     {
         list($config) = $this->parseOptions($options,'config');
+        $params =[
+            'delayInSeconds'=>$delayInSeconds,
+            'maximumMessageSizeInBytes'=>$maximumMessageSizeInBytes,
+            'messageRetentionPeriodInSeconds'=>$messageRetentionPeriodInSeconds
+        ];
+        $params = array_filter($params);
         return $this->sendRequest(
             HttpMethod::PUT,
             [
                 'config' => $config,
+                'body' => $params
             ],
             '/topic/'.$topicName
         );
-
     }
 
     /**
      * 用于删除指定的Topic。当Topic被删除后，与其关联的Subscription并不会被删除，但是对应的topic属性会被置为空字符串。
+     * @param $topicName
+     * @param array $options
+     * @return mixed
      */
     public function deleteTopic($topicName,$options=[])
     {
@@ -80,6 +94,9 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于查询用户的topic列表。
+     *
+     * @param array $options
+     * @return mixed
      */
     public function listTopic($options = [])
     {
@@ -95,6 +112,10 @@ class QnsClient extends BceBaseClient
 
     /**
      * 查询指定topic的subscription列表。
+     *
+     * @param $topicName
+     * @param array $options
+     * @return mixed
      */
     public function listTopicSubscriptions($topicName,$options=[])
     {
@@ -110,6 +131,10 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于查询指定Topic状态。
+     *
+     * @param $topicName
+     * @param array $options
+     * @return mixed
      */
     public function getTopicAttributes($topicName,$options=[])
     {
@@ -125,21 +150,29 @@ class QnsClient extends BceBaseClient
 
     /**
      * 更新一个已存在的Topic的信息。
+     *
+     * @param $topicName
+     * @param int $delayInSeconds
+     * @param int $maximumMessageSizeInBytes
+     * @param int $messageRetentionPeriodInSeconds
+     * @param array $options
+     * @return mixed
      */
     public function setTopicAttributes($topicName,$delayInSeconds=3600,$maximumMessageSizeInBytes=262144,$messageRetentionPeriodInSeconds=1209600,$options=[])
     {
         list($config) = $this->parseOptions($options,'config');
-        $param = [
+        $params = [
             'delayInSeconds'=>$delayInSeconds,
             'maximumMessageSizeInBytes'=>$maximumMessageSizeInBytes,
             'messageRetentionPeriodInSeconds'=>$messageRetentionPeriodInSeconds
         ];
+        $params = array_filter($params);
         return $this->sendRequest(
             HttpMethod::PUT,
             [
                 'config' => $config,
                 'headers'=>['If-Match'=>'*'],
-                'body'=>json_encode($param)
+                'body'=>json_encode($params)
             ],
             '/topic/'.$topicName
         );
@@ -147,6 +180,12 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于发送消息到topic中，单个请求不超过256KB。单次发送的消息个数不超过1000。
+     *
+     * @param $topicName
+     * @param $messageBody
+     * @param int $delayInSeconds
+     * @param array $options
+     * @return mixed
      */
     public function sendTopic($topicName,$messageBody,$delayInSeconds=0,$options=[])
     {
@@ -174,21 +213,30 @@ class QnsClient extends BceBaseClient
 
     /**
      * 本接口用于创建一个新的Subscritpion。
+     *
+     * @param $topicName
+     * @param $subscriptionName
+     * @param array $pushConfig
+     * @param int $receiveMessageWaitTimeInSeconds
+     * @param int $visibilityTimeoutInSeconds
+     * @param array $options
+     * @return mixed
      */
-    public function createSubscription($topicName,$subscriptionName,$pushConfig=['endpoint'=>'','version'=>'V1alpha'],$receiveMessageWaitTimeInSeconds=0,$visibilityTimeoutInSeconds=30,$options=[])
+    public function createSubscription($topicName,$subscriptionName,$pushConfig=[],$receiveMessageWaitTimeInSeconds=0,$visibilityTimeoutInSeconds=30,$options=[])
     {
         list($config) = $this->parseOptions($options,'config');
-        $param = [
+        $params = [
             'receiveMessageWaitTimeInSeconds'=>$receiveMessageWaitTimeInSeconds,
             'topic'=>$topicName,
             'visibilityTimeoutInSeconds'=>$visibilityTimeoutInSeconds,
             'pushConfig'=>$pushConfig
         ];
+        $params = array_filter($params);
         return $this->sendRequest(
             HttpMethod::PUT,
             [
                 'config' => $config,
-                'body'=>json_encode($param)
+                'body'=>json_encode($params)
             ],
             '/subscription/'.$subscriptionName
         );
@@ -196,6 +244,10 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于删除指定的Subscritpion。
+     *
+     * @param $subscriptionName
+     * @param array $options
+     * @return mixed
      */
     public function deleteSubscription($subscriptionName,$options=[])
     {
@@ -211,6 +263,9 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于查询用户的subscription列表。
+     *
+     * @param array $options
+     * @return mixed
      */
     public function listSubscription($options=[])
     {
@@ -226,6 +281,10 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于查询指定subscription状态。
+     *
+     * @param $subscriptionName
+     * @param array $options
+     * @return mixed
      */
     public function getSubscriptionAttributes($subscriptionName,$options=[])
     {
@@ -241,11 +300,17 @@ class QnsClient extends BceBaseClient
 
     /**
      * 更新一个已存在的subscription的信息。
+     *
+     * @param $subscriptionName
+     * @param int $receiveMessageWaitTimeInSeconds
+     * @param int $visibilityTimeoutInSeconds
+     * @param array $options
+     * @return mixed
      */
     public function setSubscriptionAttributes($subscriptionName,$receiveMessageWaitTimeInSeconds=0,$visibilityTimeoutInSeconds=30,$options=[])
     {
         list($config) = $this->parseOptions($options,'config');
-        $param = [
+        $params = [
             'receiveMessageWaitTimeInSeconds'=>$receiveMessageWaitTimeInSeconds,
             'visibilityTimeoutInSeconds'=>$visibilityTimeoutInSeconds,
         ];
@@ -254,7 +319,7 @@ class QnsClient extends BceBaseClient
             [
                 'config' => $config,
                 'headers'=>['If-Match'=>'*'],
-                'body'=>json_encode($param)
+                'body'=>json_encode($params)
             ],
             '/subscription/'.$subscriptionName
         );
@@ -264,6 +329,13 @@ class QnsClient extends BceBaseClient
      * 用于消费者使用消息队列的消息，receive message操作会将取得的消息状态变成Invisible，Invisible的时间长度由Subscription属性VisibilityTimeout指定。
      * 消费者在VisibilityTimeout时间内消费成功后需要调用delete message接口删除该消息，否则该消息将会被重新置为Visible，此消息又可被消费者重新消费。
      * 如果有太多的消息被接收后没有被删除（目前上限为12000），则无法继续接收，receive message请求将收到OverLimit错误。
+     *
+     * @param $subscriptionName
+     * @param int $waitInSeconds
+     * @param int $maxMessages
+     * @param null $peek
+     * @param array $options
+     * @return mixed
      */
     public function receiveSubscriptionMessage($subscriptionName,$waitInSeconds=0,$maxMessages=1,$peek=null,$options=[])
     {
@@ -286,6 +358,11 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于删除已经被消费过的消息，消费者需将上次消费后得到的receiptHandle作为参数来定位要删除的消息。本操作只有在nextVisibleTime时刻之前执行才能成功；如果过了 nextVisibleTime 时刻，消息已经变为 Visible 状态，receiptHandle就会失效，删除失败，需重新消费获取新的receiptHandle。
+     *
+     * @param $subscriptionName
+     * @param $receiptHandle
+     * @param array $options
+     * @return mixed
      */
     public function deleteSubscriptionMessage($subscriptionName,$receiptHandle,$options=[])
     {
@@ -302,10 +379,29 @@ class QnsClient extends BceBaseClient
 
     /**
      * 用于修改被消费过并且还处于的 Invisible 状态的消息下次可被消费的时间，成功修改消息的visibilityTimeout 后,返回新的 receiptHandle。
+     *
+     * @param $subscriptionName
+     * @param $receiptHandle
+     * @param $visibilityTimeoutInSeconds
+     * @param array $options
+     * @return mixed
      */
-    public function changeSubscriptionVisibility()
+    public function changeSubscriptionVisibility($subscriptionName,$receiptHandle,$visibilityTimeoutInSeconds,$options=[])
     {
-
+        list($config) = $this->parseOptions($options,'config');
+        $params = [
+            'receiptHandle'=>$receiptHandle,
+            'visibilityTimeoutInSeconds'=>$visibilityTimeoutInSeconds
+        ];
+        $params=array_filter($params);
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            [
+                'config' => $config,
+                'params' =>$params
+            ],
+            '/subscription/'.$subscriptionName.'/message'
+        );
     }
 
     /**
