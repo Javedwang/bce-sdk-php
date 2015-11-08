@@ -184,24 +184,15 @@ class QnsClient extends BceBaseClient
      * 用于发送消息到topic中，单个请求不超过256KB。单次发送的消息个数不超过1000。
      *
      * @param $topicName
-     * @param $messageBody
-     * @param int $delayInSeconds
+     * @param $messages
      * @param array $options
      * @return mixed
      */
-    public function sendTopic($topicName,$messageBody,$delayInSeconds=0,$options=[])
+    public function sendTopic($topicName,$messages,$options=[])
     {
         list($config) = $this->parseOptions($options,'config');
         $params=[
-            'messages'=>[
-                [
-                    'messageBody'=>$messageBody,
-                    'delayInSeconds'=>$delayInSeconds
-                ],
-                [
-                    'messageBody'=>$messageBody,
-                ]
-            ]
+            'messages'=>$messages
         ];
         return $this->sendRequest(
             HttpMethod::POST,
